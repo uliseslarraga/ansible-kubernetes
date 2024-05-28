@@ -1,0 +1,8 @@
+kubernetes:
+  hosts:
+    master:
+      ansible_host: 192.168.68.117 
+      ansible_user: ulises 
+    workers:
+      ansible_host: 192.168.68.109 
+      ansible_user: admin-user

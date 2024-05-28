@@ -1,0 +1,4 @@
+[kube-adm]
+192.168.68.117 ansible_user=ulises 
+[kube-workers]
+192.168.68.109 ansible_user=admin-user
