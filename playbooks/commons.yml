@@ -1,0 +1,64 @@
+
+#- name: Create the configuration file for containerd
+#  become_user: root
+#  file:
+#    path: "/etc/modules-load.d/containerd.conf"
+#    state: touch
+#- name: Populating containerd file
+#  become_user: root
+#  copy:
+#    dest: "/etc/modules-load.d/containerd.conf"
+#    content: |
+#      overlay
+#      br_netfilter
+# Config files also can be provisioned with ansible template built in 
+- name: Config containerd file
+  ansible.builtin.template:
+    src: ../templates/containerd.j2
+    dest: /etc/modules-load.d/containerd.conf
+  become_user: root
+- name: Add the overlay module
+  community.general.modprobe:
+    name: overlay
+    state: present
+- name: Add the br_netfilter module
+  community.general.modprobe:
+    name: br_netfilter
+    state: present
+- name: Config kubernetes networking
+  ansible.builtin.template:
+    src: ../templates/kubernetes-cri.j2
+    dest: /etc/sysctl.d/99-kubernetes-cri.conf
+  become_user: root
+- name: Reload sysctl.conf variables
+  ansible.builtin.command: sysctl --system
+  become_user: root
+- name: Update packages and Install packages
+  ansible.builtin.apt:
+    update_cache: yes
+    pkg:
+    - containerd
+- name: Create containerd directory if it does not exist
+  ansible.builtin.file:
+    path: /etc/containerd
+    state: directory
+    mode: '0755'
+  become_user: root
+- name: Run containerd config default and capture output
+  command: containerd config default
+  register: cmd_output
+- name: Write containerd configuration
+  copy:
+    content: "{{ cmd_output.stdout }}"
+    dest: /etc/containerd/config.toml
+    owner: root
+    group: root
+    mode: '0644'
+  become_user: root
+- name: Restarting containerd 
+  ansible.builtin.systemd_service:
+    name: containerd
+    state: restarted
+    daemon_reload: true
+
+  
