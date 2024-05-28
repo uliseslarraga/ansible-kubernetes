@@ -1,0 +1,21 @@
+- name: Setup Control plane kubernetes
+  hosts: master
+  become: true
+
+  handlers:
+    - name: Common Config
+      include_tasks: commons.yml
+
+  tasks:
+#   - name: Ping my hosts
+#     ansible.builtin.ping:
+#   - name: Print message
+#     ansible.builtin.debug:
+#      msg: Hello world
+#   - name: Setup containerd config file
+#     ansible.builtin.template:
+#       src: ../templates/containerd.j2
+#       dest: /etc/modules-load.d/containerd.conf
+#     become_user: root
+    - command: "true"
+      notify: Common Config
