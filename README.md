@@ -12,11 +12,11 @@ pip install ansible
 
 ## Veryfing inventory
 ```
-ansible-inventory -i inventory.ini --list
+ansible-inventory -i inventory.yml --list
 ```
 Testing group nodes 
 ```
-ansible kube-adm,kube-workers -m ping -i inventory.ini
+ansible master,workers -m ping -i inventory.yml
 ```
 
 ## Running a playbook

@@ -1,0 +1,11 @@
+- name: Setup Workers kubernetes
+  hosts: workers
+  become: true
+
+  handlers:
+    - name: Common Config
+      include_tasks: commons.yml
+
+  tasks:
+    - command: "true"
+      notify: Common Config
