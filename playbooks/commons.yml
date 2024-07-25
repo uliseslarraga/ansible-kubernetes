@@ -38,6 +38,9 @@
     update_cache: yes
     pkg:
     - containerd
+    - apt-transport-https 
+    - curl
+    - gnupg2
 - name: Create containerd directory if it does not exist
   ansible.builtin.file:
     path: /etc/containerd
@@ -46,10 +49,10 @@
   become_user: root
 - name: Run containerd config default and capture output
   command: containerd config default
-  register: cmd_output
+  register: containerd_config
 - name: Write containerd configuration
   copy:
-    content: "{{ cmd_output.stdout }}"
+    content: "{{ containerd_config.stdout }}"
     dest: /etc/containerd/config.toml
     owner: root
     group: root
@@ -60,5 +63,41 @@
     name: containerd
     state: restarted
     daemon_reload: true
-
-  
+- name: Run swapoff to disable all swap
+  command: swapoff -a
+  become_user: root
+- name: Ensure /etc/apt/keyrings directory exists
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+- name: Download Kubernetes APT key
+  get_url:
+    url: https://pkgs.k8s.io/core:/stable:/v1.27/deb/Release.key
+    dest: /tmp/kubernetes-release.key
+    mode: '0644'
+- name: Dearmor Kubernetes APT key and move to keyrings directory
+  command: gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg /tmp/kubernetes-release.key
+  args:
+    creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+- name: Remove temporary Kubernetes key file
+  file:
+    path: /tmp/kubernetes-release.key
+    state: absent
+- name: Add Kubernetes APT repository to sources list
+  copy:
+    dest: /etc/apt/sources.list.d/kubernetes.list
+    content: |
+      deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.27/deb/ /
+    owner: root
+    group: root
+    mode: '0644'
+- name: Update packages and Install kubernetes
+  ansible.builtin.apt:
+    update_cache: yes
+    pkg:
+    - kubelet 
+    - kubeadm 
+    - kubectl
+- name: Hold kubelet, kubeadm, and kubectl packages
+  command: apt-mark hold kubelet kubeadm kubectl
